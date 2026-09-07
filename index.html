@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>二手iPhone回收报价对比</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.min.js"></script>
 </head>
 <body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">二手苹果手机回收报价对比</h1>
@@ -222,6 +221,17 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentTableData = []; // 保存当前查询出来的数据，用于导出CSV
 
+// HTML 转义：所有来自数据库的用户提交字段渲染前必须经过此函数，防止 XSS
+function escapeHtml(v){
+    if(v===null||v===undefined) return '';
+    return String(v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
 // 加载列表
 async function loadQuotes(filters={}){
     let query = supabase.from('iphone_quote').select('*').eq('status','approved');
@@ -236,19 +246,19 @@ async function loadQuotes(filters={}){
     data.forEach(row=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td class="border p-2 text-sm">${row.model||''}</td>
-            <td class="border p-2 text-sm">${row.network_model||''}</td>
-            <td class="border p-2 text-sm">${row.storage||''}</td>
-            <td class="border p-2 text-sm">${row.price_high_keep_new||'-'}</td>
-            <td class="border p-2 text-sm">${row.price_good||'-'}</td>
-            <td class="border p-2 text-sm">${row.price_small_scratch||'-'}</td>
-            <td class="border p-2 text-sm">${row.price_big_scratch||'-'}</td>
-            <td class="border p-2 text-sm">${row.price_out_break||'-'}</td>
-            <td class="border p-2 text-sm">${row.price_inner_break||'-'}</td>
-            <td class="border p-2 text-sm text-red-600">${row.color_deduct||''}</td>
-            <td class="border p-2 text-sm">${row.note_deduct||''}</td>
-            <td class="border p-2 text-sm">${row.source||''}</td>
-            <td class="border p-2 text-sm">${new Date(row.update_time).toLocaleDateString()}</td>
+            <td class="border p-2 text-sm">${escapeHtml(row.model)}</td>
+            <td class="border p-2 text-sm">${escapeHtml(row.network_model)}</td>
+            <td class="border p-2 text-sm">${escapeHtml(row.storage)}</td>
+            <td class="border p-2 text-sm">${row.price_high_keep_new ?? '-'}</td>
+            <td class="border p-2 text-sm">${row.price_good ?? '-'}</td>
+            <td class="border p-2 text-sm">${row.price_small_scratch ?? '-'}</td>
+            <td class="border p-2 text-sm">${row.price_big_scratch ?? '-'}</td>
+            <td class="border p-2 text-sm">${row.price_out_break ?? '-'}</td>
+            <td class="border p-2 text-sm">${row.price_inner_break ?? '-'}</td>
+            <td class="border p-2 text-sm text-red-600">${escapeHtml(row.color_deduct)}</td>
+            <td class="border p-2 text-sm">${escapeHtml(row.note_deduct)}</td>
+            <td class="border p-2 text-sm">${escapeHtml(row.source)}</td>
+            <td class="border p-2 text-sm">${row.update_time ? new Date(row.update_time).toLocaleDateString() : ''}</td>
         `;
         tbody.appendChild(tr);
     })

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>报价管理后台</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.min.js"></script>
 </head>
 <body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">报价审核管理后台</h1>
@@ -50,6 +50,14 @@
                             <th class="border p-2">机型</th>
                             <th class="border p-2">存储</th>
                             <th class="border p-2">来源</th>
+                            <th class="border p-2">高保充新</th>
+                            <th class="border p-2">靓机</th>
+                            <th class="border p-2">小花</th>
+                            <th class="border p-2">大花</th>
+                            <th class="border p-2">外爆</th>
+                            <th class="border p-2">内爆可测</th>
+                            <th class="border p-2">颜色差价</th>
+                            <th class="border p-2">备注扣费</th>
                             <th class="border p-2">提交时间</th>
                             <th class="border p-2">操作</th>
                         </tr>
@@ -82,7 +90,7 @@ if(location.protocol === 'file:'){
 }
 // 2) SDK 加载检查
 if(!window.supabase){
-    addDiag("Supabase SDK 加载失败（CDN 不可达或已被网络屏蔽）。请按 F12 → Network 确认 <script src=\"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\"></script> 是否加载成功；若失败，把该行换成备用源：<script src=\"https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.45.4/umd/supabase.min.js\"></script>");
+    addDiag("Supabase SDK 加载失败。请确认 js/supabase.min.js 已与 admin.html 一起上传部署（页面通过 <script src=\"js/supabase.min.js\"></script> 本地引用，不再依赖 CDN）。");
 }
 // 3) 配置占位符检查
 if(SUPABASE_URL.includes("你的")){
@@ -99,10 +107,21 @@ const loginOkTip = document.getElementById('loginOkTip');
 const pendingTableBody = document.getElementById('pendingTableBody');
 const emptyTip = document.getElementById('emptyTip');
 
+// HTML 转义：所有用户提交字段渲染前必须经过此函数，防止 XSS
+function escapeHtml(v){
+    if(v===null||v===undefined) return '';
+    return String(v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
 // ===== SDK 未加载时的降级处理：点击登录给出明确提示 =====
 if(!window.supabase){
     document.getElementById('btnLogin').addEventListener('click',()=>{
-        loginTip.innerText = "Supabase SDK 未加载，无法登录。请按上方诊断提示检查 CDN 或更换备用源。";
+        loginTip.innerText = "Supabase SDK 未加载，无法登录。请按上方诊断提示检查 js/supabase.min.js 是否已部署。";
     });
 } else {
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -178,7 +197,7 @@ if(!window.supabase){
                 .order('created_at',{ascending:false});
 
             if(error){
-                pendingTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 p-3">加载出错：${error.message}</td></tr>`;
+                pendingTableBody.innerHTML = `<tr><td colspan="14" class="text-center text-red-500 p-3">加载出错：${escapeHtml(error.message)}</td></tr>`;
                 return;
             }
             pendingTableBody.innerHTML = '';
@@ -190,15 +209,23 @@ if(!window.supabase){
             data.forEach(row=>{
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="border p-2">${row.id}</td>
-                    <td class="border p-2">${row.model||''}</td>
-                    <td class="border p-2">${row.storage||''}</td>
-                    <td class="border p-2">${row.source||''}</td>
+                    <td class="border p-2">${escapeHtml(row.id)}</td>
+                    <td class="border p-2">${escapeHtml(row.model)}</td>
+                    <td class="border p-2">${escapeHtml(row.storage)}</td>
+                    <td class="border p-2">${escapeHtml(row.source)}</td>
+                    <td class="border p-2">${row.price_high_keep_new ?? '-'}</td>
+                    <td class="border p-2">${row.price_good ?? '-'}</td>
+                    <td class="border p-2">${row.price_small_scratch ?? '-'}</td>
+                    <td class="border p-2">${row.price_big_scratch ?? '-'}</td>
+                    <td class="border p-2">${row.price_out_break ?? '-'}</td>
+                    <td class="border p-2">${row.price_inner_break ?? '-'}</td>
+                    <td class="border p-2 text-red-600">${escapeHtml(row.color_deduct)}</td>
+                    <td class="border p-2">${escapeHtml(row.note_deduct)}</td>
                     <td class="border p-2">${new Date(row.created_at).toLocaleString()}</td>
                     <td class="border p-2 space-x-2">
-                        <button data-id="${row.id}" class="btn-approve bg-green-600 text-white px-2 py-1 rounded text-xs">通过(公开)</button>
-                        <button data-id="${row.id}" class="btn-reject bg-yellow-500 text-white px-2 py-1 rounded text-xs">驳回</button>
-                        <button data-id="${row.id}" class="btn-delete bg-red-500 text-white px-2 py-1 rounded text-xs">删除</button>
+                        <button data-id="${escapeHtml(row.id)}" class="btn-approve bg-green-600 text-white px-2 py-1 rounded text-xs">通过(公开)</button>
+                        <button data-id="${escapeHtml(row.id)}" class="btn-reject bg-yellow-500 text-white px-2 py-1 rounded text-xs">驳回</button>
+                        <button data-id="${escapeHtml(row.id)}" class="btn-delete bg-red-500 text-white px-2 py-1 rounded text-xs">删除</button>
                     </td>
                 `;
                 pendingTableBody.appendChild(tr);
@@ -245,7 +272,7 @@ if(!window.supabase){
                 }
             })
         }catch(e){
-            pendingTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 p-3">加载异常：${e.message}</td></tr>`;
+            pendingTableBody.innerHTML = `<tr><td colspan="14" class="text-center text-red-500 p-3">加载异常：${escapeHtml(e.message)}</td></tr>`;
         }
     }
 

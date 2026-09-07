@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>二手iPhone报价横向对比</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.min.js"></script>
 </head>
 <body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">多来源回收报价横向对比</h1>
@@ -101,6 +101,17 @@ const priceFields = [
     "price_inner_break"
 ];
 
+// HTML 转义：所有来自数据库的用户提交字段渲染前必须经过此函数，防止 XSS
+function escapeHtml(v){
+    if(v===null||v===undefined) return '';
+    return String(v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
 async function runCompare(){
     const model = document.getElementById('cmpModel').value.trim();
     const storage = document.getElementById('cmpStorage').value.trim();
@@ -121,7 +132,7 @@ async function runCompare(){
         .order('source', {ascending:true});
 
     if(error){
-        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-red-500">查询出错：${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-red-500">查询出错：${escapeHtml(error.message)}</td></tr>`;
         return;
     }
     if(!data || data.length === 0){
@@ -140,20 +151,20 @@ async function runCompare(){
     data.forEach(row=>{
         const tr = document.createElement('tr');
         const tds = [];
-        tds.push(`<td class="border p-2 text-sm font-semibold">${row.source||''}</td>`);
-        tds.push(`<td class="border p-2 text-sm">${row.network_model||''}</td>`);
+        tds.push(`<td class="border p-2 text-sm font-semibold">${escapeHtml(row.source)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${escapeHtml(row.network_model)}</td>`);
 
         priceFields.forEach(field=>{
             const val = row[field] ?? '-';
             const numVal = Number(val)||0;
             const isMax = numVal>0 && numVal === maxMap[field];
             const bgClass = isMax ? 'bg-green-100 font-bold' : '';
-            tds.push(`<td class="border p-2 text-sm ${bgClass}">${val}</td>`);
+            tds.push(`<td class="border p-2 text-sm ${bgClass}">${escapeHtml(val)}</td>`)
         })
 
-        tds.push(`<td class="border p-2 text-sm text-red-600">${row.color_deduct||''}</td>`);
-        tds.push(`<td class="border p-2 text-sm">${row.note_deduct||''}</td>`);
-        tds.push(`<td class="border p-2 text-sm">${new Date(row.update_time).toLocaleDateString()}</td>`);
+        tds.push(`<td class="border p-2 text-sm text-red-600">${escapeHtml(row.color_deduct)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${escapeHtml(row.note_deduct)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${row.update_time ? new Date(row.update_time).toLocaleDateString() : ''}</td>`);
 
         tr.innerHTML = tds.join('');
         tbody.appendChild(tr);
