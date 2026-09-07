@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二手iPhone回收报价对比</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-6 text-center">二手苹果手机回收报价对比</h1>
+
+    <!-- 导航链接 -->
+    <div class="mb-4 flex gap-4">
+        <a href="compare.html" class="text-blue-600 underline">→ 进入报价对比页面</a>
+        <a href="admin.html" class="text-blue-600 underline">→ 管理员后台</a>
+    </div>
+
+    <!-- 筛选区 -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">机型</label>
+                <select id="filterModel" class="w-full border p-2 rounded">
+                    <option value="">全部机型</option>
+                    <option>iPhone 17 PRO MAX</option>
+                    <option>iPhone 17 Pro</option>
+                    <option>iPhone 17</option>
+                    <option>iPhone 17 Air</option>
+                    <option>iPhone 17e</option>
+                    <option>iPhone 16 PRO MAX</option>
+                    <option>iPhone 16 PRO</option>
+                    <option>iPhone 16 Plus</option>
+                    <option>iPhone 16</option>
+                    <option>iPhone 16e</option>
+                    <option>iPhone 15 PRO MAX</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">存储容量</label>
+                <select id="filterStorage" class="w-full border p-2 rounded">
+                    <option value="">全部容量</option>
+                    <option>128G</option>
+                    <option>256G</option>
+                    <option>512G</option>
+                    <option>1T</option>
+                    <option>2T</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">报价来源</label>
+                <select id="filterSource" class="w-full border p-2 rounded">
+                    <option value="">全部来源</option>
+                    <option>手机联盟报价</option>
+                    <option>爱回收</option>
+                    <option>转转</option>
+                    <option>京东拍拍</option>
+                    <option>闲鱼商家</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-3 flex gap-3">
+            <button id="btnSearch" class="bg-green-600 text-white px-4 py-2 rounded">查询报价</button>
+            <button id="btnExportCsv" class="bg-sky-600 text-white px-4 py-2 rounded">导出当前列表CSV</button>
+        </div>
+    </div>
+
+    <!-- 报价表格 -->
+    <div class="overflow-x-auto mb-8 bg-white rounded shadow">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-green-100">
+                    <th class="border p-2 text-sm">机型</th>
+                    <th class="border p-2 text-sm">网络型号</th>
+                    <th class="border p-2 text-sm">容量</th>
+                    <th class="border p-2 text-sm">高保充新</th>
+                    <th class="border p-2 text-sm">靓机</th>
+                    <th class="border p-2 text-sm">小花</th>
+                    <th class="border p-2 text-sm">大花</th>
+                    <th class="border p-2 text-sm">外爆</th>
+                    <th class="border p-2 text-sm">内爆可测</th>
+                    <th class="border p-2 text-sm">颜色差价</th>
+                    <th class="border p-2 text-sm">备注扣费</th>
+                    <th class="border p-2 text-sm">来源</th>
+                    <th class="border p-2 text-sm">更新时间</th>
+                </tr>
+            </thead>
+            <tbody id="quoteTableBody"></tbody>
+        </table>
+    </div>
+
+    <!-- 到手价计算器 -->
+    <div class="bg-white p-5 rounded-lg shadow mb-8">
+        <h3 class="font-bold text-lg mb-3">回收到手价计算器</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm mb-1">选择机型</label>
+                <select id="calcModel" class="w-full border p-2 rounded">
+                    <option>iPhone 17 PRO MAX</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">存储容量</label>
+                <select id="calcStorage" class="w-full border p-2 rounded">
+                    <option>256G</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">成色</label>
+                <select id="calcCondition" class="w-full border p-2 rounded">
+                    <option value="price_high_keep_new">高保充新</option>
+                    <option value="price_good">靓机</option>
+                    <option value="price_small_scratch">小花</option>
+                    <option value="price_big_scratch">大花</option>
+                    <option value="price_out_break">外爆</option>
+                    <option value="price_inner_break">内爆可测</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">颜色差价</label>
+                <select id="calcColor" class="w-full border p-2 rounded">
+                    <option value="0">常规颜色(0)</option>
+                    <option value="-400">蓝色(-400)</option>
+                    <option value="-500">其他特殊色(-500)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">配件情况</label>
+                <select id="calcFullSet" class="w-full border p-2 rounded">
+                    <option value="0">全套(0)</option>
+                    <option value="-300">无全套(-300)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">计算结果</label>
+                <div id="calcResult" class="border p-3 bg-gray-50 text-lg font-semibold">请选择条件</div>
+            </div>
+        </div>
+        <button id="btnCalc" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded">计算到手价</button>
+    </div>
+
+    <!-- 提交新报价表单 -->
+    <div class="bg-white p-5 rounded-lg shadow mb-8">
+        <h3 class="font-bold text-lg mb-3">提交新的回收报价（提交后等待管理员审核）</h3>
+        <form id="submitForm" class="grid gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label>机型</label>
+                    <input type="text" name="model" required class="w-full border p-2 rounded" placeholder="iPhone 17 PRO MAX">
+                </div>
+                <div>
+                    <label>网络型号</label>
+                    <input type="text" name="network_model" class="w-full border p-2 rounded" placeholder="A3527">
+                </div>
+                <div>
+                    <label>存储容量</label>
+                    <input type="text" name="storage" required class="w-full border p-2 rounded" placeholder="256G">
+                </div>
+                <div>
+                    <label>报价来源</label>
+                    <input type="text" name="source" required class="w-full border p-2 rounded" placeholder="手机联盟报价">
+                </div>
+                <div>
+                    <label>高保充新</label>
+                    <input type="number" name="price_high_keep_new" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>靓机</label>
+                    <input type="number" name="price_good" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>小花</label>
+                    <input type="number" name="price_small_scratch" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>大花</label>
+                    <input type="number" name="price_big_scratch" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>外爆</label>
+                    <input type="number" name="price_out_break" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>内爆可测</label>
+                    <input type="number" name="price_inner_break" class="w-full border p-2 rounded">
+                </div>
+                <div>
+                    <label>颜色差价</label>
+                    <input type="text" name="color_deduct" class="w-full border p-2 rounded" placeholder="蓝色-400">
+                </div>
+                <div>
+                    <label>备注扣费</label>
+                    <input type="text" name="note_deduct" class="w-full border p-2 rounded" placeholder="无全套需扣费">
+                </div>
+            </div>
+            <button type="submit" class="bg-green-600 text-white py-2 rounded">提交报价（待审核）</button>
+        </form>
+    </div>
+
+    <!-- 成色规则说明 -->
+    <div class="bg-white p-5 rounded-lg shadow mb-6 text-sm">
+        <h4 class="font-bold mb-2">成色定义说明（参考行业报价单）</h4>
+        <ul class="list-disc pl-5 space-y-1">
+            <li><strong>高保充新</strong>：灯光照射完美无瑕疵，在保330天以上</li>
+            <li><strong>靓机</strong>：少量细微划痕或完美；壳轻微使用痕迹无磕碰掉漆</li>
+            <li><strong>小花</strong>：屏幕有轻微划痕；两处以内轻微小磕碰小掉漆</li>
+            <li><strong>大花</strong>：硬划痕长度小于20mm，超过算外爆；亮壳机身无弯曲缺失</li>
+            <li><strong>外爆</strong>：小碎裂/缺角/硬划痕/后压屏；靓机机身无弯曲缺失</li>
+            <li><strong>内爆</strong>：外屏全碎裂，可测试功能是否正常；假屏/压伤/漏液/掉线</li>
+        </ul>
+        <div class="mt-4 text-gray-600">
+            <p>⚠️免责声明：本网站报价由网友及行业渠道提供，仅供参考，实际回收价格以平台验机为准。</p>
+        </div>
+    </div>
+
+<script>
+// ========== 替换这里为你的Supabase配置 ==========
+const SUPABASE_URL = "https://otvnqqtdsmkosamfrhgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dm5xcXRkc21rb3NhbWZyaGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3Njk2NjYsImV4cCI6MjEwNDM0NTY2Nn0.s-xLaVgahS3vIAyr-h4w1F1BXC_gNdExPxvHdbC87t8";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentTableData = []; // 保存当前查询出来的数据，用于导出CSV
+
+// 加载列表
+async function loadQuotes(filters={}){
+    let query = supabase.from('iphone_quote').select('*').eq('status','approved');
+    if(filters.model) query = query.eq('model',filters.model);
+    if(filters.storage) query = query.eq('storage',filters.storage);
+    if(filters.source) query = query.eq('source',filters.source);
+    const {data,error} = await query.order('update_time',{ascending:false});
+    if(error){console.error(error);return;}
+    currentTableData = data || [];
+    const tbody = document.getElementById('quoteTableBody');
+    tbody.innerHTML = '';
+    data.forEach(row=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="border p-2 text-sm">${row.model||''}</td>
+            <td class="border p-2 text-sm">${row.network_model||''}</td>
+            <td class="border p-2 text-sm">${row.storage||''}</td>
+            <td class="border p-2 text-sm">${row.price_high_keep_new||'-'}</td>
+            <td class="border p-2 text-sm">${row.price_good||'-'}</td>
+            <td class="border p-2 text-sm">${row.price_small_scratch||'-'}</td>
+            <td class="border p-2 text-sm">${row.price_big_scratch||'-'}</td>
+            <td class="border p-2 text-sm">${row.price_out_break||'-'}</td>
+            <td class="border p-2 text-sm">${row.price_inner_break||'-'}</td>
+            <td class="border p-2 text-sm text-red-600">${row.color_deduct||''}</td>
+            <td class="border p-2 text-sm">${row.note_deduct||''}</td>
+            <td class="border p-2 text-sm">${row.source||''}</td>
+            <td class="border p-2 text-sm">${new Date(row.update_time).toLocaleDateString()}</td>
+        `;
+        tbody.appendChild(tr);
+    })
+}
+
+// 查询按钮
+document.getElementById('btnSearch').addEventListener('click',async()=>{
+    const model = document.getElementById('filterModel').value;
+    const storage = document.getElementById('filterStorage').value;
+    const source = document.getElementById('filterSource').value;
+    await loadQuotes({model,storage,source});
+})
+
+// 导出CSV
+document.getElementById('btnExportCsv').addEventListener('click',()=>{
+    if(!currentTableData || currentTableData.length === 0){
+        alert("没有可导出的数据，请先查询报价");
+        return;
+    }
+    const headers = [
+        "model","network_model","storage","price_high_keep_new","price_good",
+        "price_small_scratch","price_big_scratch","price_out_break","price_inner_break",
+        "color_deduct","note_deduct","source","update_time"
+    ];
+    function escapeCsvCell(v){
+        if(v===null||v===undefined) return "";
+        let s = String(v);
+        if(s.includes('"')||s.includes(',')||s.includes('\n')){
+            s = '"' + s.replace(/"/g,'""') + '"';
+        }
+        return s;
+    }
+    let csvLines = [headers.join(',')];
+    currentTableData.forEach(row=>{
+        const line = headers.map(h=>escapeCsvCell(row[h])).join(',');
+        csvLines.push(line);
+    });
+    const csvText = csvLines.join('\n');
+    const blob = new Blob(["\uFEFF"+csvText], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `iphone_quote_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+});
+
+// 提交表单
+document.getElementById('submitForm').addEventListener('submit',async(e)=>{
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const obj = Object.fromEntries(formData);
+    // 转换数字字段
+    ['price_high_keep_new','price_good','price_small_scratch','price_big_scratch','price_out_break','price_inner_break'].forEach(k=>{
+        obj[k] = Number(obj[k])||null;
+    })
+    obj.status = 'pending';
+    const {error} = await supabase.from('iphone_quote').insert(obj);
+    if(error){
+        alert("提交失败："+error.message);
+    }else{
+        alert("提交成功！等待管理员审核后公开");
+        e.target.reset();
+    }
+})
+
+// 价格计算器
+document.getElementById('btnCalc').addEventListener('click',async()=>{
+    const model = document.getElementById('calcModel').value;
+    const storage = document.getElementById('calcStorage').value;
+    const condKey = document.getElementById('calcCondition').value;
+    const colorDeduct = Number(document.getElementById('calcColor').value);
+    const fullSetDeduct = Number(document.getElementById('calcFullSet').value);
+
+    const {data} = await supabase.from('iphone_quote')
+        .select('*')
+        .eq('model',model)
+        .eq('storage',storage)
+        .eq('status','approved')
+        .limit(1);
+    if(!data || data.length===0){
+        document.getElementById('calcResult').innerText = "暂无该机型报价";
+        return;
+    }
+    const row = data[0];
+    const basePrice = row[condKey] || 0;
+    const final = basePrice + colorDeduct + fullSetDeduct;
+    document.getElementById('calcResult').innerText = `预估到手价：${final} 元`;
+})
+
+// 页面初始化加载全部数据
+loadQuotes();
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报价管理后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-6 text-center">报价审核管理后台</h1>
+    <div class="mb-4">
+        <a href="index.html" class="text-blue-600 underline">← 返回网站首页</a>
+    </div>
+
+    <!-- 登录区域 -->
+    <div id="loginBox" class="bg-white p-6 rounded-lg shadow mb-6">
+        <h3 class="font-bold text-lg mb-4">管理员登录</h3>
+        <div class="grid gap-3">
+            <input type="email" id="adminEmail" placeholder="管理员邮箱" class="border p-2 rounded">
+            <input type="password" id="adminPwd" placeholder="密码" class="border p-2 rounded">
+            <button id="btnLogin" class="bg-blue-600 text-white py-2 rounded">登录</button>
+            <p id="loginTip" class="text-red-500 text-sm"></p>
+        </div>
+    </div>
+
+    <!-- 后台操作区域（登录成功才显示） -->
+    <div id="adminPanel" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <span class="font-semibold">已登录：<span id="userEmail"></span></span>
+            </div>
+            <button id="btnLogout" class="bg-red-500 text-white px-3 py-1 rounded">退出登录</button>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg shadow mb-6">
+            <h3 class="font-bold mb-3">待审核报价列表（status=pending）</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border p-2">ID</th>
+                            <th class="border p-2">机型</th>
+                            <th class="border p-2">存储</th>
+                            <th class="border p-2">来源</th>
+                            <th class="border p-2">提交时间</th>
+                            <th class="border p-2">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTableBody"></tbody>
+                </table>
+            </div>
+            <div id="emptyTip" class="py-6 text-center text-gray-500">暂无待审核数据</div>
+        </div>
+    </div>
+
+<script>
+// ========== 替换为你的Supabase配置 ==========
+const SUPABASE_URL = "https://otvnqqtdsmkosamfrhgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dm5xcXRkc21rb3NhbWZyaGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3Njk2NjYsImV4cCI6MjEwNDM0NTY2Nn0.s-xLaVgahS3vIAyr-h4w1F1BXC_gNdExPxvHdbC87t8";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const loginBox = document.getElementById('loginBox');
+const adminPanel = document.getElementById('adminPanel');
+const loginTip = document.getElementById('loginTip');
+const pendingTableBody = document.getElementById('pendingTableBody');
+const emptyTip = document.getElementById('emptyTip');
+
+// 检查登录状态
+async function checkAuth(){
+    const {data:{user}} = await supabase.auth.getUser();
+    if(user){
+        loginBox.classList.add('hidden');
+        adminPanel.classList.remove('hidden');
+        document.getElementById('userEmail').innerText = user.email;
+        loadPendingList();
+    }else{
+        loginBox.classList.remove('hidden');
+        adminPanel.classList.add('hidden');
+    }
+}
+
+// 登录
+document.getElementById('btnLogin').addEventListener('click',async()=>{
+    const email = document.getElementById('adminEmail').value.trim();
+    const pwd = document.getElementById('adminPwd').value.trim();
+    loginTip.innerText = "";
+    const {data,error} = await supabase.auth.signInWithPassword({email,password:pwd});
+    if(error){
+        loginTip.innerText = "登录失败："+error.message;
+        return;
+    }
+    checkAuth();
+})
+
+// 退出登录
+document.getElementById('btnLogout').addEventListener('click',async()=>{
+    await supabase.auth.signOut();
+    checkAuth();
+})
+
+// 加载待审核列表
+async function loadPendingList(){
+    const {data,error} = await supabase
+        .from('iphone_quote')
+        .select('*')
+        .eq('status','pending')
+        .order('created_at',{ascending:false});
+
+    if(error){
+        pendingTableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500 p-3">加载出错：${error.message}</td></tr>`;
+        return;
+    }
+    pendingTableBody.innerHTML = '';
+    if(!data || data.length === 0){
+        emptyTip.classList.remove('hidden');
+        return;
+    }
+    emptyTip.classList.add('hidden');
+    data.forEach(row=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="border p-2">${row.id}</td>
+            <td class="border p-2">${row.model||''}</td>
+            <td class="border p-2">${row.storage||''}</td>
+            <td class="border p-2">${row.source||''}</td>
+            <td class="border p-2">${new Date(row.created_at).toLocaleString()}</td>
+            <td class="border p-2 space-x-2">
+                <button data-id="${row.id}" class="btn-approve bg-green-600 text-white px-2 py-1 rounded text-xs">通过(公开)</button>
+                <button data-id="${row.id}" class="btn-reject bg-yellow-500 text-white px-2 py-1 rounded text-xs">驳回</button>
+                <button data-id="${row.id}" class="btn-delete bg-red-500 text-white px-2 py-1 rounded text-xs">删除</button>
+            </td>
+        `;
+        pendingTableBody.appendChild(tr);
+    })
+
+    // 通过
+    document.querySelectorAll('.btn-approve').forEach(btn=>{
+        btn.onclick = async ()=>{
+            const id = Number(btn.dataset.id);
+            const {error} = await supabase.from('iphone_quote').update({status:'approved'}).eq('id',id);
+            if(error) alert("操作失败："+error.message);
+            else loadPendingList();
+        }
+    })
+    // 驳回
+    document.querySelectorAll('.btn-reject').forEach(btn=>{
+        btn.onclick = async ()=>{
+            const id = Number(btn.dataset.id);
+            const {error} = await supabase.from('iphone_quote').update({status:'rejected'}).eq('id',id);
+            if(error) alert("操作失败："+error.message);
+            else loadPendingList();
+        }
+    })
+    // 删除
+    document.querySelectorAll('.btn-delete').forEach(btn=>{
+        btn.onclick = async ()=>{
+            const id = Number(btn.dataset.id);
+            if(!confirm("确认删除这条记录？")) return;
+            const {error} = await supabase.from('iphone_quote').delete().eq('id',id);
+            if(error) alert("操作失败："+error.message);
+            else loadPendingList();
+        }
+    })
+}
+
+// 页面初始化
+checkAuth();
+</script>
+</body>
+</html>
