@@ -1,8 +1,8 @@
-model,network_model,storage,price_high_keep_new,price_good,price_small_scratch,price_big_scratch,price_out_break,price_inner_break,color_deduct,note_deduct,source,update_time,status
-iPhone 17 PRO MAX,A3527,256G,7650,7500,7300,6450,6250,5200,钃濊壊-400,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 PRO MAX,A3527,512G,8850,8650,8250,7350,7150,6150,512/1TG钃濊壊-800,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 PRO MAX,A3527,1T,9800,9550,9250,8450,8250,7100,2T钃濊壊-1000,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 PRO MAX,A3527,2T,11400,11100,10700,9500,9300,8000,,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 Pro,A3524,256G,6800,6650,6450,5950,5750,5000,256/512G钃濊壊-500,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 Pro,A3524,512G,8100,7900,7650,6900,6700,6050,1T钃濊壊-600,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
-iPhone 17 Pro,A3524,1T,9100,8900,8500,7750,7550,6800,,鏃犲叏濂楅渶鎵ｈ垂,鎵嬫満鑱旂洘鎶ヤ环,2026/9/7,approved
+﻿model,network_model,storage,price_high_keep_new,price_good,price_small_scratch,price_big_scratch,price_out_break,price_inner_break,color_deduct,note_deduct,source,update_time,status
+iPhone 17 PRO MAX,A3527,256G,7650,7500,7300,6450,6250,5200,蓝色-400,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 PRO MAX,A3527,512G,8850,8650,8250,7350,7150,6150,512/1TG蓝色-800,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 PRO MAX,A3527,1T,9800,9550,9250,8450,8250,7100,2T蓝色-1000,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 PRO MAX,A3527,2T,11400,11100,10700,9500,9300,8000,,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 Pro,A3524,256G,6800,6650,6450,5950,5750,5000,256/512G蓝色-500,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 Pro,A3524,512G,8100,7900,7650,6900,6700,6050,1T蓝色-600,无全套需扣费,手机联盟报价,2026-09-07,approved
+iPhone 17 Pro,A3524,1T,9100,8900,8500,7750,7550,6800,,无全套需扣费,手机联盟报价,2026-09-07,approved
