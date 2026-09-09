@@ -30,41 +30,33 @@ on public.iphone_quote for select
 to anon
 using (status = 'approved');
 
--- 4. 匿名访客可提交新报价（强制为 pending 待审核，防止匿名直接写入已公开数据）
-create policy "anon insert pending"
+-- 4. 匿名访客可提交新报价（无需登录，提交后直接公开）
+create policy "anon insert"
 on public.iphone_quote for insert
 to anon
-with check (status = 'pending');
-
--- 4.1 登录用户（管理员）可插入任意状态记录（用于修复/补录数据）
-create policy "authenticated insert"
-on public.iphone_quote for insert
-to authenticated
 with check (true);
 
--- 5. 登录用户（管理员）可以读取全部记录（含待审核/驳回）
-create policy "authenticated read all"
-on public.iphone_quote for select
-to authenticated
-using (true);
-
--- 6. 登录用户（管理员）可以更新记录（审核通过/驳回）
-create policy "authenticated update"
+-- 5. 匿名访客可以更新记录（编辑已有报价）
+create policy "anon update"
 on public.iphone_quote for update
-to authenticated
+to anon
 using (true)
 with check (true);
 
--- 7. 登录用户（管理员）可以删除记录
-create policy "authenticated delete"
+-- 6. 匿名访客可以删除记录
+create policy "anon delete"
 on public.iphone_quote for delete
-to authenticated
+to anon
 using (true);
 
--- 安全说明：Supabase 默认关闭公开注册（Authentication → Sign Up / Providers 中 Email 注册默认关闭），
--- 登录账号只能由管理员在 Authentication → Users → Add user 手动创建，
--- 因此上述 authenticated 读写权限实际仅管理员持有，请勿开启公开注册。
+-- 安全说明：本方案取消管理员审核机制，任何人都可以直接增删改报价数据。
+-- 如果后续需要恢复审核流程，删除上述 4/5/6 策略，改为 to authenticated 即可。
+-- 建议在前端加一道简单口令验证防止恶意篡改。
 
--- 8. 历史版本补丁：若此前执行过旧版本（insert 仅允许 authenticated，导致匿名提交报价失败），
---    本段会删除旧策略；全新执行时此段为无副作用的空操作。
+-- 7. 历史版本补丁：若此前执行过旧版本策略，以下语句会清理旧策略；全新执行时为无副作用空操作。
 drop policy if exists "allow insert for authenticated" on public.iphone_quote;
+drop policy if exists "anon insert pending" on public.iphone_quote;
+drop policy if exists "authenticated insert" on public.iphone_quote;
+drop policy if exists "authenticated read all" on public.iphone_quote;
+drop policy if exists "authenticated update" on public.iphone_quote;
+drop policy if exists "authenticated delete" on public.iphone_quote;
