@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二手iPhone报价横向对比</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/supabase.min.js"></script>
+</head>
+<body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-6 text-center">多来源回收报价横向对比</h1>
+
+    <!-- 返回首页链接 -->
+    <div class="mb-4">
+        <a href="index.html" class="text-blue-600 underline">← 返回报价主页</a>
+    </div>
+
+    <!-- 对比筛选条件 -->
+    <div class="bg-white p-4 rounded-lg shadow mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium mb-1">机型</label>
+                <select id="cmpModel" class="w-full border p-2 rounded">
+                    <option value="">请选择机型</option>
+                    <option>iPhone 17 PRO MAX</option>
+                    <option>iPhone 17 Pro</option>
+                    <option>iPhone 17</option>
+                    <option>iPhone 17 Air</option>
+                    <option>iPhone 17e</option>
+                    <option>iPhone 16 PRO MAX</option>
+                    <option>iPhone 16 PRO</option>
+                    <option>iPhone 16 Plus</option>
+                    <option>iPhone 16</option>
+                    <option>iPhone 16e</option>
+                    <option>iPhone 15 PRO MAX</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1">存储容量</label>
+                <select id="cmpStorage" class="w-full border p-2 rounded">
+                    <option value="">请选择容量</option>
+                    <option>128G</option>
+                    <option>256G</option>
+                    <option>512G</option>
+                    <option>1T</option>
+                    <option>2T</option>
+                </select>
+            </div>
+        </div>
+        <button id="btnCompare" class="mt-3 bg-green-600 text-white px-4 py-2 rounded">开始对比</button>
+    </div>
+
+    <!-- 对比结果表格 -->
+    <div class="overflow-x-auto mb-8 bg-white rounded shadow">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-green-100">
+                    <th class="border p-2 text-sm">报价来源</th>
+                    <th class="border p-2 text-sm">网络型号</th>
+                    <th class="border p-2 text-sm">高保充新</th>
+                    <th class="border p-2 text-sm">靓机</th>
+                    <th class="border p-2 text-sm">小花</th>
+                    <th class="border p-2 text-sm">大花</th>
+                    <th class="border p-2 text-sm">外爆</th>
+                    <th class="border p-2 text-sm">内爆可测</th>
+                    <th class="border p-2 text-sm">颜色差价</th>
+                    <th class="border p-2 text-sm">备注扣费</th>
+                    <th class="border p-2 text-sm">更新时间</th>
+                </tr>
+            </thead>
+            <tbody id="compareTableBody">
+                <tr><td colspan="11" class="text-center p-4 text-gray-500">请选择机型和存储后点击对比</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 对比说明 -->
+    <div class="bg-white p-5 rounded-lg shadow mb-6 text-sm">
+        <h4 class="font-bold mb-2">对比说明</h4>
+        <ul class="list-disc pl-5 space-y-1">
+            <li>同一机型+存储，展示全部已审核通过的不同来源报价</li>
+            <li><span class="bg-green-100 px-1">绿色背景</span>代表该成色档位当前最高报价</li>
+            <li>价格为各渠道基础报价，颜色、配件、电池会额外加减价</li>
+            <li>⚠️免责声明：报价仅供参考，实际回收以验机为准。</li>
+        </ul>
+    </div>
+
+<script>
+// ========== 和index.html保持一样的Supabase配置 ==========
+const SUPABASE_URL = "https://otvnqqtdsmkosamfrhgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im90dm5xcXRkc21rb3NhbWZyaGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3Njk2NjYsImV4cCI6MjEwNDM0NTY2Nn0.s-xLaVgahS3vIAyr-h4w1F1BXC_gNdExPxvHdbC87t8";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// 成色字段列表，对应表格列
+const priceFields = [
+    "price_high_keep_new",
+    "price_good",
+    "price_small_scratch",
+    "price_big_scratch",
+    "price_out_break",
+    "price_inner_break"
+];
+
+// HTML 转义：所有来自数据库的用户提交字段渲染前必须经过此函数，防止 XSS
+function escapeHtml(v){
+    if(v===null||v===undefined) return '';
+    return String(v)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
+async function runCompare(){
+    const model = document.getElementById('cmpModel').value.trim();
+    const storage = document.getElementById('cmpStorage').value.trim();
+    const tbody = document.getElementById('compareTableBody');
+    tbody.innerHTML = '';
+
+    if(!model || !storage){
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-red-500">请选择机型和存储容量</td></tr>`;
+        return;
+    }
+
+    const {data, error} = await supabase
+        .from('iphone_quote')
+        .select('*')
+        .eq('model', model)
+        .eq('storage', storage)
+        .eq('status','approved')
+        .order('source', {ascending:true});
+
+    if(error){
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-red-500">查询出错：${escapeHtml(error.message)}</td></tr>`;
+        return;
+    }
+    if(!data || data.length === 0){
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-gray-500">暂无该机型该容量的公开报价</td></tr>`;
+        return;
+    }
+
+    // 计算每一档成色的最大值
+    const maxMap = {};
+    priceFields.forEach(field=>{
+        const nums = data.map(row=>Number(row[field])||0).filter(v=>v>0);
+        maxMap[field] = nums.length>0 ? Math.max(...nums) : 0;
+    })
+
+    // 渲染对比表格
+    data.forEach(row=>{
+        const tr = document.createElement('tr');
+        const tds = [];
+        tds.push(`<td class="border p-2 text-sm font-semibold">${escapeHtml(row.source)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${escapeHtml(row.network_model)}</td>`);
+
+        priceFields.forEach(field=>{
+            const val = row[field] ?? '-';
+            const numVal = Number(val)||0;
+            const isMax = numVal>0 && numVal === maxMap[field];
+            const bgClass = isMax ? 'bg-green-100 font-bold' : '';
+            tds.push(`<td class="border p-2 text-sm ${bgClass}">${escapeHtml(val)}</td>`)
+        })
+
+        tds.push(`<td class="border p-2 text-sm text-red-600">${escapeHtml(row.color_deduct)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${escapeHtml(row.note_deduct)}</td>`);
+        tds.push(`<td class="border p-2 text-sm">${row.update_time ? new Date(row.update_time).toLocaleDateString() : ''}</td>`);
+
+        tr.innerHTML = tds.join('');
+        tbody.appendChild(tr);
+    })
+}
+
+document.getElementById('btnCompare').addEventListener('click', runCompare);
+</script>
+</body>
+</html>
