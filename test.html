@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>单测 — 报价网站 utils.js</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/utils.js"></script>
+    <style>
+        body { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        .pass { color: #16a34a; }
+        .fail { color: #dc2626; }
+        .badge-pass { background: #dcfce7; color: #16a34a; }
+        .badge-fail { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body class="bg-gray-50 max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-2">🧪 单元测试 — js/utils.js</h1>
+    <p class="text-gray-600 text-sm mb-6">直接在浏览器中打开此文件即可运行，无需 npm / 构建工具</p>
+    <div id="summary" class="bg-white p-4 rounded shadow mb-4 font-bold"></div>
+    <div id="results" class="space-y-2"></div>
+
+<script>
+// ============== 极简测试框架 ==============
+const results = [];
+let currentSuite = '';
+
+function suite(name){
+    currentSuite = name;
+}
+function test(name, fn){
+    try {
+        fn();
+        results.push({suite: currentSuite, name, pass: true, error: null});
+    } catch(e) {
+        results.push({suite: currentSuite, name, pass: false, error: e.message});
+    }
+}
+function assert(cond, msg){
+    if(!cond) throw new Error(msg || '断言失败');
+}
+function assertEq(a, b, msg){
+    const sa = JSON.stringify(a), sb = JSON.stringify(b);
+    if(sa !== sb) throw new Error((msg||'') + ` 期望 ${sb}，实际 ${sa}`);
+}
+function assertThrows(fn, msg){
+    let threw = false;
+    try { fn(); } catch(e){ threw = true; }
+    if(!threw) throw new Error(msg || '期望抛出异常但未抛出');
+}
+
+const { escapeHtml, parseCsvLine, buildDistinctSets, groupStorageByModel, buildSelectInnerHTML, ensureDatalist, populateSelect } = QuoteUtils;
+
+// ============== escapeHtml 测试 ==============
+suite('escapeHtml — XSS 防护');
+
+test('普通字符串不变', ()=>{
+    assertEq(escapeHtml('iPhone 17'), 'iPhone 17');
+});
+test('null/undefined 返回空串', ()=>{
+    assertEq(escapeHtml(null), '');
+    assertEq(escapeHtml(undefined), '');
+});
+test('HTML 标签转义', ()=>{
+    assertEq(escapeHtml('<script>alert(1)</' + 'script>'),
+        '&lt;script&gt;alert(1)&lt;/' + 'script&gt;');
+});
+test('引号转义', ()=>{
+    assertEq(escapeHtml('He said "hello"'), 'He said &quot;hello&quot;');
+});
+test('单引号转义', ()=>{
+    assertEq(escapeHtml("O'Brien"), 'O&#39;Brien');
+});
+test('& 符号转义', ()=>{
+    assertEq(escapeHtml('AT&T'), 'AT&amp;T');
+});
+test('数字转字符串', ()=>{
+    assertEq(escapeHtml(123), '123');
+});
+
+// ============== parseCsvLine 测试 ==============
+suite('parseCsvLine — CSV 单行解析');
+
+test('简单逗号分隔', ()=>{
+    assertEq(parseCsvLine('a,b,c'), ['a','b','c']);
+});
+test('空字段', ()=>{
+    assertEq(parseCsvLine('a,,c'), ['a','','c']);
+});
+test('引号包裹含逗号', ()=>{
+    assertEq(parseCsvLine('"hello, world",foo'), ['hello, world','foo']);
+});
+test('双引号转义', ()=>{
+    assertEq(parseCsvLine('"he said ""hi""",bar'), ['he said "hi"','bar']);
+});
+test('整行空串', ()=>{
+    assertEq(parseCsvLine(''), ['']);
+});
+test('单字段', ()=>{
+    assertEq(parseCsvLine('hello'), ['hello']);
+});
+
+// ============== buildDistinctSets 测试 ==============
+suite('buildDistinctSets — 去重聚合');
+
+test('正常去重', ()=>{
+    const rows = [
+        {model:'A', storage:'128G', source:'S1', warranty_status:'在保'},
+        {model:'A', storage:'256G', source:'S2', warranty_status:'过保'},
+        {model:'B', storage:'128G', source:'S1', warranty_status:'在保'},
+    ];
+    const r = buildDistinctSets(rows);
+    assertEq([...r.models].sort(), ['A','B']);
+    assertEq([...r.storages].sort(), ['128G','256G']);
+    assertEq([...r.sources].sort(), ['S1','S2']);
+    assertEq([...r.warranties].sort(), ['在保','过保']);
+});
+test('空数组', ()=>{
+    const r = buildDistinctSets([]);
+    assert(r.models.size === 0);
+    assert(r.storages.size === 0);
+    assert(r.sources.size === 0);
+    assert(r.warranties.size === 0);
+});
+test('null/undefined 字段跳过', ()=>{
+    const rows = [{model:'A'}, {storage:'128G'}];
+    const r = buildDistinctSets(rows);
+    assertEq([...r.models], ['A']);
+    assertEq([...r.storages], ['128G']);
+    assert(r.sources.size === 0);
+    assert(r.warranties.size === 0);
+});
+test('null 输入防御', ()=>{
+    const r = buildDistinctSets(null);
+    assert(r.models instanceof Set);
+    assert(r.models.size === 0);
+});
+
+// ============== groupStorageByModel 测试 ==============
+suite('groupStorageByModel — 机型→容量映射');
+
+test('正常分组', ()=>{
+    const rows = [
+        {model:'A', storage:'128G'},
+        {model:'A', storage:'256G'},
+        {model:'B', storage:'128G'},
+        {model:'A', storage:'128G'}, // 重复应被去重
+    ];
+    const m = groupStorageByModel(rows);
+    assertEq([...m.A].sort(), ['128G','256G']);
+    assertEq([...m.B], ['128G']);
+});
+test('空数组', ()=>{
+    const m = groupStorageByModel([]);
+    assertEq(Object.keys(m).length, 0);
+});
+test('无 model 字段跳过', ()=>{
+    const rows = [{storage:'128G'}, null, undefined];
+    const m = groupStorageByModel(rows);
+    assertEq(Object.keys(m).length, 0);
+});
+
+// ============== buildSelectInnerHTML 测试 ==============
+suite('buildSelectInnerHTML — select 选项 HTML');
+
+test('Set 输入 + 首项占位', ()=>{
+    const html = buildSelectInnerHTML(new Set(['A','B']), '全部');
+    assert(html.includes('<option value="">全部</option>'));
+    assert(html.includes('>A<'));
+    assert(html.includes('>B<'));
+    assert(html.indexOf('>A<') < html.indexOf('>B<'), '应排序');
+});
+test('数组输入 + 自定义首项 value', ()=>{
+    const html = buildSelectInnerHTML(['X'], '请选', '__all__');
+    assert(html.includes('<option value="__all__">请选</option>'));
+});
+test('XSS 防护 — 值被转义', ()=>{
+    const html = buildSelectInnerHTML(new Set(['<script>']), '');
+    assert(!html.includes('<script>'));
+    assert(html.includes('&lt;script&gt;'));
+});
+test('空输入', ()=>{
+    const html = buildSelectInnerHTML([], '全部');
+    assert(html.includes('<option value="">全部</option>'));
+    // 空输入应只有占位首项，没有值选项
+    const optCount = (html.match(/<option/g) || []).length;
+    assertEq(optCount, 1, '应只有 1 个 option（占位首项）');
+});
+
+// ============== DOM 相关测试（需 jsdom 或浏览器环境） ==============
+suite('ensureDatalist — datalist 创建/刷新');
+
+test('首次调用创建 datalist', ()=>{
+    const prev = document.getElementById('testDl1');
+    assert(!prev, 'fixture 不存在');
+    ensureDatalist('testDl1', new Set(['a','b']));
+    const dl = document.getElementById('testDl1');
+    assert(dl, 'datalist 应被创建');
+    assertEq(dl.options.length, 2);
+});
+test('再次调用刷新内容', ()=>{
+    ensureDatalist('testDl2', ['x']);
+    ensureDatalist('testDl2', ['y','z']);
+    const dl = document.getElementById('testDl2');
+    assertEq(dl.options.length, 2);
+});
+
+suite('populateSelect — select 填充');
+
+test('填充 HTMLSelectElement', ()=>{
+    const sel = document.createElement('select');
+    document.body.appendChild(sel);
+    populateSelect(sel, new Set(['Z','A']), '请选');
+    assertEq(sel.options.length, 3); // 首项 + 2 排序后
+    assertEq(sel.options[0].value, '');
+    assertEq(sel.options[0].textContent, '请选');
+    assertEq(sel.options[1].textContent, 'A');
+    assertEq(sel.options[2].textContent, 'Z');
+    document.body.removeChild(sel);
+});
+test('null 元素安全跳过', ()=>{
+    populateSelect(null, ['a'], 'x'); // 不应抛异常
+});
+
+// ============== 运行 & 渲染 ==============
+const summaryEl = document.getElementById('summary');
+const resultsEl = document.getElementById('results');
+const passCount = results.filter(r=>r.pass).length;
+const failCount = results.length - passCount;
+const badgeClass = failCount === 0 ? 'badge-pass' : 'badge-fail';
+summaryEl.innerHTML = `
+    共 <span class="text-blue-600">${results.length}</span> 项测试
+    · <span class="pass">✅ 通过 ${passCount}</span>
+    · <span class="fail">❌ 失败 ${failCount}</span>
+    <span class="ml-2 px-2 py-0.5 rounded ${badgeClass} text-sm">${failCount === 0 ? 'ALL PASS' : 'HAS FAILURES'}</span>
+`;
+
+// 按 suite 分组渲染
+let lastSuite = '';
+results.forEach(r=>{
+    if(r.suite !== lastSuite){
+        const h = document.createElement('h3');
+        h.className = 'text-sm font-bold mt-3 mb-1 text-gray-700';
+        h.textContent = '📦 ' + r.suite;
+        resultsEl.appendChild(h);
+        lastSuite = r.suite;
+    }
+    const row = document.createElement('div');
+    row.className = `bg-white p-2 rounded shadow text-sm flex gap-3 ${r.pass ? 'pass' : 'fail'}`;
+    row.innerHTML = `
+        <span class="w-6">${r.pass ? '✅' : '❌'}</span>
+        <span class="flex-1">${r.name}</span>
+        ${r.pass ? '' : `<span class="text-xs text-red-500 max-w-md truncate">${r.error}</span>`}
+    `;
+    resultsEl.appendChild(row);
+});
+</script>
+</body>
+</html>
