@@ -6,6 +6,7 @@
     <title>二手iPhone回收报价对比</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/supabase.min.js"></script>
+    <script src="js/utils.js"></script>
 </head>
 <body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">二手苹果手机回收报价对比</h1>
@@ -23,39 +24,18 @@
                 <label class="block text-sm font-medium mb-1">机型</label>
                 <select id="filterModel" class="w-full border p-2 rounded">
                     <option value="">全部机型</option>
-                    <option>iPhone 17 PRO MAX</option>
-                    <option>iPhone 17 Pro</option>
-                    <option>iPhone 17</option>
-                    <option>iPhone 17 Air</option>
-                    <option>iPhone 17e</option>
-                    <option>iPhone 16 PRO MAX</option>
-                    <option>iPhone 16 PRO</option>
-                    <option>iPhone 16 Plus</option>
-                    <option>iPhone 16</option>
-                    <option>iPhone 16e</option>
-                    <option>iPhone 15 PRO MAX</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">存储容量</label>
                 <select id="filterStorage" class="w-full border p-2 rounded">
                     <option value="">全部容量</option>
-                    <option>128G</option>
-                    <option>256G</option>
-                    <option>512G</option>
-                    <option>1T</option>
-                    <option>2T</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">报价来源</label>
                 <select id="filterSource" class="w-full border p-2 rounded">
                     <option value="">全部来源</option>
-                    <option>手机联盟报价</option>
-                    <option>爱回收</option>
-                    <option>转转</option>
-                    <option>京东拍拍</option>
-                    <option>闲鱼商家</option>
                 </select>
             </div>
         </div>
@@ -126,7 +106,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label>机型</label>
-                            <input type="text" name="model" required class="w-full border p-2 rounded" placeholder="iPhone 17 PRO MAX">
+                            <input type="text" name="model" required class="w-full border p-2 rounded" list="datalistModel" placeholder="iPhone 17 PRO MAX">
                         </div>
                         <div>
                             <label>网络型号</label>
@@ -134,11 +114,11 @@
                         </div>
                         <div>
                             <label>存储容量</label>
-                            <input type="text" name="storage" required class="w-full border p-2 rounded" placeholder="256G">
+                            <input type="text" name="storage" required class="w-full border p-2 rounded" list="datalistStorage" placeholder="256G">
                         </div>
                         <div>
                             <label>报价来源</label>
-                            <input type="text" name="source" required class="w-full border p-2 rounded" placeholder="手机联盟报价">
+                            <input type="text" name="source" required class="w-full border p-2 rounded" list="datalistSource" placeholder="手机联盟报价">
                         </div>
                         <div>
                             <label>高保充新</label>
@@ -170,9 +150,7 @@
                         </div>
                         <div>
                             <label>保修状态</label>
-                            <select name="warranty_status" class="w-full border p-2 rounded">
-                                <option value="在保">在保</option>
-                                <option value="过保">过保</option>
+                            <select name="warranty_status" id="editWarranty" class="w-full border p-2 rounded">
                             </select>
                         </div>
                         <div>
@@ -189,77 +167,6 @@
         </div>
     </div>
 
-    <!-- 到手价计算器 -->
-    <div class="bg-white p-5 rounded-lg shadow mb-8">
-        <h3 class="font-bold text-lg mb-3">回收到手价计算器</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-sm mb-1">选择机型</label>
-                <select id="calcModel" class="w-full border p-2 rounded">
-                    <option>iPhone 17 PRO MAX</option>
-                    <option>iPhone 17 Pro</option>
-                    <option>iPhone 17</option>
-                    <option>iPhone 17 Air</option>
-                    <option>iPhone 17e</option>
-                    <option>iPhone 16 PRO MAX</option>
-                    <option>iPhone 16 PRO</option>
-                    <option>iPhone 16 Plus</option>
-                    <option>iPhone 16</option>
-                    <option>iPhone 16e</option>
-                    <option>iPhone 15 PRO MAX</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">存储容量</label>
-                <select id="calcStorage" class="w-full border p-2 rounded">
-                    <option>128G</option>
-                    <option>256G</option>
-                    <option>512G</option>
-                    <option>1T</option>
-                    <option>2T</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">成色</label>
-                <select id="calcCondition" class="w-full border p-2 rounded">
-                    <option value="price_high_keep_new">高保充新</option>
-                    <option value="price_good">靓机</option>
-                    <option value="price_small_scratch">小花</option>
-                    <option value="price_big_scratch">大花</option>
-                    <option value="price_out_break">外爆</option>
-                    <option value="price_inner_break">内爆可测</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">颜色差价</label>
-                <select id="calcColor" class="w-full border p-2 rounded">
-                    <option value="0">常规颜色(0)</option>
-                    <option value="-400">蓝色(-400)</option>
-                    <option value="-500">其他特殊色(-500)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">配件情况</label>
-                <select id="calcFullSet" class="w-full border p-2 rounded">
-                    <option value="0">全套(0)</option>
-                    <option value="-300">无全套(-300)</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">保修状态</label>
-                <select id="calcWarranty" class="w-full border p-2 rounded">
-                    <option value="在保">在保</option>
-                    <option value="过保">过保</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm mb-1">计算结果</label>
-                <div id="calcResult" class="border p-3 bg-gray-50 text-lg font-semibold">请选择条件</div>
-            </div>
-        </div>
-        <button id="btnCalc" class="mt-3 bg-blue-600 text-white px-4 py-2 rounded">计算到手价</button>
-    </div>
-
     <!-- 提交新报价表单 -->
     <div class="bg-white p-5 rounded-lg shadow mb-8">
         <h3 class="font-bold text-lg mb-3">提交新的回收报价（提交后直接公开）</h3>
@@ -267,7 +174,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                     <label>机型</label>
-                    <input type="text" name="model" required class="w-full border p-2 rounded" placeholder="iPhone 17 PRO MAX">
+                    <input type="text" name="model" required class="w-full border p-2 rounded" list="datalistModel" placeholder="iPhone 17 PRO MAX">
                 </div>
                 <div>
                     <label>网络型号</label>
@@ -275,11 +182,11 @@
                 </div>
                 <div>
                     <label>存储容量</label>
-                    <input type="text" name="storage" required class="w-full border p-2 rounded" placeholder="256G">
+                    <input type="text" name="storage" required class="w-full border p-2 rounded" list="datalistStorage" placeholder="256G">
                 </div>
                 <div>
                     <label>报价来源</label>
-                    <input type="text" name="source" required class="w-full border p-2 rounded" placeholder="手机联盟报价">
+                    <input type="text" name="source" required class="w-full border p-2 rounded" list="datalistSource" placeholder="手机联盟报价">
                 </div>
                 <div>
                     <label>高保充新</label>
@@ -311,9 +218,7 @@
                 </div>
                 <div>
                     <label>保修状态</label>
-                    <select name="warranty_status" class="w-full border p-2 rounded">
-                        <option value="在保">在保</option>
-                        <option value="过保">过保</option>
+                    <select name="warranty_status" id="submitWarranty" class="w-full border p-2 rounded">
                     </select>
                 </div>
                 <div>
@@ -349,21 +254,56 @@ const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentTableData = []; // 保存当前查询出来的数据，用于导出CSV
 let currentFilters = {};   // 当前筛选条件，编辑/删除后保持筛选状态
+let tableExpanded = false; // 报价表格展开状态
 
 // ========== 更新面板口令 ==========
 // 修改为你自己的口令，部署后只有知道此口令的人才能编辑/删除/导入报价
 const UPDATE_PASSCODE = "888888";
 let passcodeVerified = false;
 
-// HTML 转义：所有来自数据库的用户提交字段渲染前必须经过此函数，防止 XSS
-function escapeHtml(v){
-    if(v===null||v===undefined) return '';
-    return String(v)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
+// HTML 转义等工具函数统一从 QuoteUtils 引用
+const { escapeHtml, parseCsvLine, buildDistinctSets, groupStorageByModel, buildSelectInnerHTML, ensureDatalist, populateSelect } = QuoteUtils;
+
+// 从数据库动态填充所有机型/容量/来源/保修状态下拉选项 + datalist 建议
+let globalModelStorageMap = {}; // 全局缓存：机型 -> Set(容量)
+async function populateDynamicOptions(){
+    const {data} = await supabase.from('iphone_quote')
+        .select('model,storage,source,warranty_status')
+        .eq('status','approved');
+    const { models, storages, sources, warranties } = buildDistinctSets(data);
+    globalModelStorageMap = groupStorageByModel(data);
+
+    // 填充顶部筛选区
+    populateSelect(document.getElementById('filterModel'), models, '全部机型');
+    populateSelect(document.getElementById('filterStorage'), storages, '全部容量');
+    populateSelect(document.getElementById('filterSource'), sources, '全部来源');
+
+    // 填充编辑表单和提交表单的保修状态下拉
+    populateSelect(document.getElementById('editWarranty'), warranties);
+    populateSelect(document.getElementById('submitWarranty'), warranties);
+    const sw = document.getElementById('submitWarranty');
+    if (warranties.has('在保')) sw.value = '在保';
+
+    // 创建 datalist 供表单输入框使用
+    ensureDatalist('datalistModel', models);
+    ensureDatalist('datalistStorage', storages);
+    ensureDatalist('datalistSource', sources);
+
+    // 绑定顶部筛选区机型联动容量
+    document.getElementById('filterModel').addEventListener('change', updateFilterStorageOptions);
+}
+
+// 顶部筛选区：机型变化时联动容量下拉
+function updateFilterStorageOptions(){
+    const model = document.getElementById('filterModel').value;
+    const storageSel = document.getElementById('filterStorage');
+    const allStorages = new Set();
+    Object.values(globalModelStorageMap).forEach(s=>s.forEach(x=>allStorages.add(x)));
+    if(model && globalModelStorageMap[model]){
+        storageSel.innerHTML = buildSelectInnerHTML(globalModelStorageMap[model], '全部容量');
+    }else{
+        storageSel.innerHTML = buildSelectInnerHTML(allStorages, '全部容量');
+    }
 }
 
 // 加载列表
@@ -377,7 +317,8 @@ async function loadQuotes(filters={}){
     currentTableData = data || [];
     const tbody = document.getElementById('quoteTableBody');
     tbody.innerHTML = '';
-    data.forEach(row=>{
+    const displayData = tableExpanded ? data : data.slice(0,10);
+    displayData.forEach(row=>{
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="border p-2 text-sm">${escapeHtml(row.model)}</td>
@@ -402,6 +343,27 @@ async function loadQuotes(filters={}){
         tbody.appendChild(tr);
     });
     bindRowActions();
+    // 展开/收起按钮
+    const total = currentTableData.length;
+    const toggleBar = document.getElementById('tableToggleBar');
+    if(!toggleBar){
+        // 首次渲染后插入按钮条
+        const bar = document.createElement('div');
+        bar.id = 'tableToggleBar';
+        bar.className = 'text-center py-3';
+        tbody.parentElement.parentElement.appendChild(bar);
+    }
+    const bar = document.getElementById('tableToggleBar');
+    if(total > 10){
+        bar.classList.remove('hidden');
+        bar.innerHTML = `<button id="btnToggleTable" class="text-blue-600 underline text-sm">${tableExpanded ? '收起' : `展开全部（共 ${total} 条）`}</button>`;
+        document.getElementById('btnToggleTable').onclick = ()=>{
+            tableExpanded = !tableExpanded;
+            loadQuotes(currentFilters);
+        };
+    }else{
+        bar.classList.add('hidden');
+    }
 }
 
 // 查询按钮
@@ -468,35 +430,6 @@ document.getElementById('submitForm').addEventListener('submit',async(e)=>{
         e.target.reset();
         loadQuotes();
     }
-})
-
-// 价格计算器
-document.getElementById('btnCalc').addEventListener('click',async()=>{
-    const model = document.getElementById('calcModel').value;
-    const storage = document.getElementById('calcStorage').value;
-    const condKey = document.getElementById('calcCondition').value;
-    const colorDeduct = Number(document.getElementById('calcColor').value);
-    const fullSetDeduct = Number(document.getElementById('calcFullSet').value);
-    const warrantyStatus = document.getElementById('calcWarranty').value;
-
-    const {data} = await supabase.from('iphone_quote')
-        .select('*')
-        .eq('model',model)
-        .eq('storage',storage)
-        .eq('warranty_status',warrantyStatus)
-        .eq('status','approved')
-        .limit(1);
-    if(!data || data.length===0){
-        document.getElementById('calcResult').innerText = "暂无该机型该保修状态的报价";
-        return;
-    }
-    const row = data[0];
-    const basePrice = row[condKey] || 0;
-    const final = basePrice + colorDeduct + fullSetDeduct;
-    const parts = [`${warrantyStatus}基础价 ${basePrice}`];
-    if(colorDeduct) parts.push(`颜色 ${colorDeduct}`);
-    if(fullSetDeduct) parts.push(`配件 ${fullSetDeduct}`);
-    document.getElementById('calcResult').innerHTML = `预估到手价：<span class="text-blue-600">${final}</span> 元<br><span class="text-xs text-gray-500 font-normal">${parts.join(' + ')}</span>`;
 })
 
 // ===== 报价数据更新面板：折叠切换 + 口令验证 =====
@@ -569,7 +502,7 @@ function bindRowActions(){
             form.price_out_break.value = row.price_out_break ?? '';
             form.price_inner_break.value = row.price_inner_break ?? '';
             form.color_deduct.value = row.color_deduct || '';
-            form.warranty_status.value = row.warranty_status || '在保';
+            form.warranty_status.value = row.warranty_status || form.warranty_status.options[0]?.value || '';
             form.note_deduct.value = row.note_deduct || '';
             // 滚动到编辑表单
             document.getElementById('editForm').scrollIntoView({behavior:'smooth'});
@@ -668,30 +601,9 @@ document.getElementById('btnImportCsv').addEventListener('click',async()=>{
     }
 });
 
-// CSV 单行解析（支持引号包裹）
-function parseCsvLine(line){
-    const result = [];
-    let cur = '';
-    let inQuotes = false;
-    for(let i=0;i<line.length;i++){
-        const ch = line[i];
-        if(inQuotes){
-            if(ch === '"'){
-                if(line[i+1] === '"'){ cur += '"'; i++; }
-                else inQuotes = false;
-            } else cur += ch;
-        } else {
-            if(ch === '"') inQuotes = true;
-            else if(ch === ','){ result.push(cur); cur=''; }
-            else cur += ch;
-        }
-    }
-    result.push(cur);
-    return result;
-}
-
 // 页面初始化加载全部数据
 loadQuotes();
+populateDynamicOptions();
 </script>
 </body>
 </html>

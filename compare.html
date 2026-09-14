@@ -6,6 +6,7 @@
     <title>二手iPhone报价横向对比</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="js/supabase.min.js"></script>
+    <script src="js/utils.js"></script>
 </head>
 <body class="bg-gray-50 max-w-7xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-6 text-center">多来源回收报价横向对比</h1>
@@ -22,36 +23,18 @@
                 <label class="block text-sm font-medium mb-1">机型</label>
                 <select id="cmpModel" class="w-full border p-2 rounded">
                     <option value="">请选择机型</option>
-                    <option>iPhone 17 PRO MAX</option>
-                    <option>iPhone 17 Pro</option>
-                    <option>iPhone 17</option>
-                    <option>iPhone 17 Air</option>
-                    <option>iPhone 17e</option>
-                    <option>iPhone 16 PRO MAX</option>
-                    <option>iPhone 16 PRO</option>
-                    <option>iPhone 16 Plus</option>
-                    <option>iPhone 16</option>
-                    <option>iPhone 16e</option>
-                    <option>iPhone 15 PRO MAX</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">存储容量</label>
                 <select id="cmpStorage" class="w-full border p-2 rounded">
-                    <option value="">请选择容量</option>
-                    <option>128G</option>
-                    <option>256G</option>
-                    <option>512G</option>
-                    <option>1T</option>
-                    <option>2T</option>
+                    <option value="">请先选择机型</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1">保修状态</label>
                 <select id="cmpWarranty" class="w-full border p-2 rounded">
                     <option value="全部">全部</option>
-                    <option value="在保">在保</option>
-                    <option value="过保">过保</option>
                 </select>
             </div>
         </div>
@@ -110,16 +93,7 @@ const priceFields = [
     "price_inner_break"
 ];
 
-// HTML 转义：所有来自数据库的用户提交字段渲染前必须经过此函数，防止 XSS
-function escapeHtml(v){
-    if(v===null||v===undefined) return '';
-    return String(v)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-}
+const { escapeHtml, buildDistinctSets, groupStorageByModel, populateSelect } = QuoteUtils;
 
 async function runCompare(){
     const model = document.getElementById('cmpModel').value.trim();
@@ -186,6 +160,28 @@ async function runCompare(){
 }
 
 document.getElementById('btnCompare').addEventListener('click', runCompare);
+
+// 动态填充机型/容量/保修状态下拉选项
+let cmpStorageMap = {};
+async function populateCompareOptions(){
+    const {data} = await supabase.from('iphone_quote')
+        .select('model,storage,warranty_status').eq('status','approved');
+    const { models, storages, warranties } = buildDistinctSets(data);
+    cmpStorageMap = groupStorageByModel(data);
+    populateSelect(document.getElementById('cmpModel'), models, '请选择机型');
+    document.getElementById('cmpModel').addEventListener('change', updateCmpStorageOptions);
+    populateSelect(document.getElementById('cmpWarranty'), warranties, '全部');
+}
+function updateCmpStorageOptions(){
+    const model = document.getElementById('cmpModel').value;
+    const sel = document.getElementById('cmpStorage');
+    if(model && cmpStorageMap[model] && cmpStorageMap[model].size){
+        populateSelect(sel, cmpStorageMap[model], '请选择容量');
+    }else{
+        sel.innerHTML = '<option value="">请先选择机型</option>';
+    }
+}
+populateCompareOptions();
 </script>
 </body>
 </html>
