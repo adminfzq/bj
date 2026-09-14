@@ -80,6 +80,7 @@
                     <th class="border p-2 text-sm">外爆</th>
                     <th class="border p-2 text-sm">内爆可测</th>
                     <th class="border p-2 text-sm">颜色差价</th>
+                    <th class="border p-2 text-sm">保修状态</th>
                     <th class="border p-2 text-sm">备注扣费</th>
                     <th class="border p-2 text-sm">来源</th>
                     <th class="border p-2 text-sm">更新时间</th>
@@ -168,6 +169,13 @@
                             <input type="text" name="color_deduct" class="w-full border p-2 rounded" placeholder="蓝色-400">
                         </div>
                         <div>
+                            <label>保修状态</label>
+                            <select name="warranty_status" class="w-full border p-2 rounded">
+                                <option value="在保">在保</option>
+                                <option value="过保">过保</option>
+                            </select>
+                        </div>
+                        <div>
                             <label>备注扣费</label>
                             <input type="text" name="note_deduct" class="w-full border p-2 rounded" placeholder="无全套需扣费">
                         </div>
@@ -189,12 +197,26 @@
                 <label class="block text-sm mb-1">选择机型</label>
                 <select id="calcModel" class="w-full border p-2 rounded">
                     <option>iPhone 17 PRO MAX</option>
+                    <option>iPhone 17 Pro</option>
+                    <option>iPhone 17</option>
+                    <option>iPhone 17 Air</option>
+                    <option>iPhone 17e</option>
+                    <option>iPhone 16 PRO MAX</option>
+                    <option>iPhone 16 PRO</option>
+                    <option>iPhone 16 Plus</option>
+                    <option>iPhone 16</option>
+                    <option>iPhone 16e</option>
+                    <option>iPhone 15 PRO MAX</option>
                 </select>
             </div>
             <div>
                 <label class="block text-sm mb-1">存储容量</label>
                 <select id="calcStorage" class="w-full border p-2 rounded">
+                    <option>128G</option>
                     <option>256G</option>
+                    <option>512G</option>
+                    <option>1T</option>
+                    <option>2T</option>
                 </select>
             </div>
             <div>
@@ -221,6 +243,13 @@
                 <select id="calcFullSet" class="w-full border p-2 rounded">
                     <option value="0">全套(0)</option>
                     <option value="-300">无全套(-300)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm mb-1">保修状态</label>
+                <select id="calcWarranty" class="w-full border p-2 rounded">
+                    <option value="在保">在保</option>
+                    <option value="过保">过保</option>
                 </select>
             </div>
             <div>
@@ -279,6 +308,13 @@
                 <div>
                     <label>颜色差价</label>
                     <input type="text" name="color_deduct" class="w-full border p-2 rounded" placeholder="蓝色-400">
+                </div>
+                <div>
+                    <label>保修状态</label>
+                    <select name="warranty_status" class="w-full border p-2 rounded">
+                        <option value="在保">在保</option>
+                        <option value="过保">过保</option>
+                    </select>
                 </div>
                 <div>
                     <label>备注扣费</label>
@@ -354,6 +390,7 @@ async function loadQuotes(filters={}){
             <td class="border p-2 text-sm">${row.price_out_break ?? '-'}</td>
             <td class="border p-2 text-sm">${row.price_inner_break ?? '-'}</td>
             <td class="border p-2 text-sm text-red-600">${escapeHtml(row.color_deduct)}</td>
+            <td class="border p-2 text-sm font-semibold ${row.warranty_status === '过保' ? 'text-orange-600' : 'text-green-600'}">${escapeHtml(row.warranty_status)}</td>
             <td class="border p-2 text-sm">${escapeHtml(row.note_deduct)}</td>
             <td class="border p-2 text-sm">${escapeHtml(row.source)}</td>
             <td class="border p-2 text-sm">${row.update_time ? new Date(row.update_time).toLocaleDateString() : ''}</td>
@@ -385,7 +422,7 @@ document.getElementById('btnExportCsv').addEventListener('click',()=>{
     const headers = [
         "model","network_model","storage","price_high_keep_new","price_good",
         "price_small_scratch","price_big_scratch","price_out_break","price_inner_break",
-        "color_deduct","note_deduct","source","update_time"
+        "color_deduct","warranty_status","note_deduct","source","update_time"
     ];
     function escapeCsvCell(v){
         if(v===null||v===undefined) return "";
@@ -440,21 +477,26 @@ document.getElementById('btnCalc').addEventListener('click',async()=>{
     const condKey = document.getElementById('calcCondition').value;
     const colorDeduct = Number(document.getElementById('calcColor').value);
     const fullSetDeduct = Number(document.getElementById('calcFullSet').value);
+    const warrantyStatus = document.getElementById('calcWarranty').value;
 
     const {data} = await supabase.from('iphone_quote')
         .select('*')
         .eq('model',model)
         .eq('storage',storage)
+        .eq('warranty_status',warrantyStatus)
         .eq('status','approved')
         .limit(1);
     if(!data || data.length===0){
-        document.getElementById('calcResult').innerText = "暂无该机型报价";
+        document.getElementById('calcResult').innerText = "暂无该机型该保修状态的报价";
         return;
     }
     const row = data[0];
     const basePrice = row[condKey] || 0;
     const final = basePrice + colorDeduct + fullSetDeduct;
-    document.getElementById('calcResult').innerText = `预估到手价：${final} 元`;
+    const parts = [`${warrantyStatus}基础价 ${basePrice}`];
+    if(colorDeduct) parts.push(`颜色 ${colorDeduct}`);
+    if(fullSetDeduct) parts.push(`配件 ${fullSetDeduct}`);
+    document.getElementById('calcResult').innerHTML = `预估到手价：<span class="text-blue-600">${final}</span> 元<br><span class="text-xs text-gray-500 font-normal">${parts.join(' + ')}</span>`;
 })
 
 // ===== 报价数据更新面板：折叠切换 + 口令验证 =====
@@ -527,6 +569,7 @@ function bindRowActions(){
             form.price_out_break.value = row.price_out_break ?? '';
             form.price_inner_break.value = row.price_inner_break ?? '';
             form.color_deduct.value = row.color_deduct || '';
+            form.warranty_status.value = row.warranty_status || '在保';
             form.note_deduct.value = row.note_deduct || '';
             // 滚动到编辑表单
             document.getElementById('editForm').scrollIntoView({behavior:'smooth'});

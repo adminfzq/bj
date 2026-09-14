@@ -14,6 +14,7 @@ create table public.iphone_quote (
   price_out_break integer,                    -- 外爆
   price_inner_break integer,                  -- 内爆可测
   color_deduct text,                          -- 颜色差价：蓝色-400
+  warranty_status text,                       -- 保修状态：在保 / 过保（同机型同容量同来源可有两套报价）
   note_deduct text,                           -- 备注扣费：无全套扣费
   source text not null,                       -- 报价来源：手机联盟/爱回收/转转
   update_time timestamp with time zone default now(),  -- 报价更新时间
@@ -60,3 +61,7 @@ drop policy if exists "authenticated insert" on public.iphone_quote;
 drop policy if exists "authenticated read all" on public.iphone_quote;
 drop policy if exists "authenticated update" on public.iphone_quote;
 drop policy if exists "authenticated delete" on public.iphone_quote;
+
+-- 8. 补丁：若表已存在，添加 warranty_status 字段；若之前添加过 warranty_deduct 则删除旧字段
+alter table public.iphone_quote add column if not exists warranty_status text;
+alter table public.iphone_quote drop column if exists warranty_deduct;
